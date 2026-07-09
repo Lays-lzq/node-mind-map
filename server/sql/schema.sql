@@ -1,0 +1,118 @@
+CREATE DATABASE IF NOT EXISTS node_mind_map
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE node_mind_map;
+
+CREATE TABLE IF NOT EXISTS profile (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  nickname VARCHAR(50) NOT NULL,
+  title VARCHAR(100) NOT NULL,
+  location VARCHAR(50) NOT NULL,
+  education VARCHAR(200) NOT NULL,
+  avatar VARCHAR(255) NOT NULL DEFAULT '/avatar.png',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS profile_summary (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profile_id INT NOT NULL,
+  content TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profile_id INT NOT NULL,
+  label VARCHAR(50) NOT NULL,
+  value VARCHAR(255) NOT NULL,
+  href VARCHAR(255),
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS skill_groups (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profile_id INT NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS skill_items (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  skill_group_id INT NOT NULL,
+  content VARCHAR(255) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (skill_group_id) REFERENCES skill_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS work_experience (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profile_id INT NOT NULL,
+  company VARCHAR(200) NOT NULL,
+  period VARCHAR(50) NOT NULL,
+  role VARCHAR(100) NOT NULL,
+  department VARCHAR(100) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS work_experience_highlights (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  work_experience_id INT NOT NULL,
+  content TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (work_experience_id) REFERENCES work_experience(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS project_experience (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profile_id INT NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  period VARCHAR(50) NOT NULL,
+  description TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS project_experience_stack (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_experience_id INT NOT NULL,
+  content VARCHAR(100) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (project_experience_id) REFERENCES project_experience(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS project_experience_highlights (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_experience_id INT NOT NULL,
+  content TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (project_experience_id) REFERENCES project_experience(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id VARCHAR(100) PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  description TEXT NOT NULL,
+  status ENUM('live', 'wip', 'archived') NOT NULL DEFAULT 'wip',
+  icon VARCHAR(20) NOT NULL DEFAULT '📦',
+  accent VARCHAR(20) NOT NULL DEFAULT '#667eea',
+  route_name VARCHAR(100),
+  external_url VARCHAR(255),
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS project_tags (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_id VARCHAR(100) NOT NULL,
+  tag VARCHAR(100) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);

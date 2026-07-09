@@ -1,0 +1,26 @@
+services:
+  mysql:
+    # 国内网络可改用镜像源，见 README「Docker 镜像拉取失败」
+    image: ${MYSQL_IMAGE:-docker.m.daocloud.io/library/mysql:8.0}
+    container_name: node-mind-map-mysql
+    restart: unless-stopped
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: node_mind_map
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  mysql_data:
