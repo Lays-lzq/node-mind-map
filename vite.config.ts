@@ -17,6 +17,7 @@ export default defineConfig((config) => {
         apiBaseUrl.startsWith('/') && Boolean(env.VITE_API_PROXY_TARGET);
 
     return {
+        base: './',
         plugins: [
             vue(),
             AutoImport({
@@ -46,19 +47,28 @@ export default defineConfig((config) => {
         },
         build: {
             outDir: 'dist',
+            cssCodeSplit: false,
             chunkSizeWarningLimit: 1500,
+            modulePreload: {
+                resolveDependencies(_filename, deps) {
+                    return deps.filter((dep) => !dep.includes('konva-vendor'));
+                }
+            },
             rollupOptions: {
                 output: {
+                    experimentalMinChunkSize: 20_000,
                     manualChunks(id) {
                         if (!id.includes('node_modules')) return;
                         if (id.includes('konva') || id.includes('vue-konva')) {
                             return 'konva-vendor';
                         }
-                        if (id.includes('element-plus')) {
-                            return 'element-plus';
-                        }
-                        if (id.includes('vue') || id.includes('vue-router') || id.includes('@vue')) {
-                            return 'vue-vendor';
+                        if (
+                            id.includes('/vue/') ||
+                            id.includes('/vue-router/') ||
+                            id.includes('/@vue/') ||
+                            id.includes('element-plus')
+                        ) {
+                            return 'vendor';
                         }
                     }
                 }
