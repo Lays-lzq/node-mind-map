@@ -7,6 +7,15 @@ import {
     buildChatSystemPrompt,
     buildGeneralChatSystemPrompt
 } from '../prompts/mindmap.js';
+import {
+    aiOriginGuard,
+    aiAuthRateLimit,
+    aiTokenGuard,
+    aiChatRateLimit,
+    aiGenerateRateLimit,
+    validateChatBody,
+    createAiToken
+} from '../middleware/aiGuard.js';
 
 const router = Router();
 
@@ -18,7 +27,11 @@ function parseMindMapJson(content) {
     return parsed;
 }
 
-router.post('/generate', async (req, res, next) => {
+router.get('/auth', aiOriginGuard, aiAuthRateLimit, (_req, res) => {
+    success(res, createAiToken());
+});
+
+router.post('/generate', aiOriginGuard, aiTokenGuard, aiGenerateRateLimit, async (req, res, next) => {
     try {
         const { topic } = req.body ?? {};
         if (!topic?.trim()) {
@@ -37,7 +50,7 @@ router.post('/generate', async (req, res, next) => {
     }
 });
 
-router.post('/expand', async (req, res, next) => {
+router.post('/expand', aiOriginGuard, aiTokenGuard, aiGenerateRateLimit, async (req, res, next) => {
     try {
         const { nodeTitle, contextSummary } = req.body ?? {};
         if (!nodeTitle?.trim()) {
@@ -56,14 +69,9 @@ router.post('/expand', async (req, res, next) => {
     }
 });
 
-router.post('/chat', async (req, res, next) => {
+router.post('/chat', aiOriginGuard, aiTokenGuard, aiChatRateLimit, validateChatBody, async (req, res, next) => {
     try {
         const { messages, contextSummary, mode = 'general' } = req.body ?? {};
-        if (!Array.isArray(messages) || messages.length === 0) {
-            fail(res, 400, 'messages 不能为空');
-            return;
-        }
-
         const systemContent =
             mode === 'mindmap'
                 ? buildChatSystemPrompt(contextSummary || '')

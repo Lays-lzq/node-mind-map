@@ -1,17 +1,33 @@
 import type { ApiResponse } from '@/types/api';
 import type { AiChatMessage, AiChatMode, AiMindMapResponse } from '@/types/ai';
+import { aiAuthHeaders, getAiToken, invalidateAiToken, resolveAiApiBase } from '@/utils/aiAuth';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-/** 流式对话直连后端，避免 Vite 代理缓冲 SSE */
-const CHAT_API_BASE =
-    import.meta.env.VITE_CHAT_API_BASE_URL || API_BASE;
+async function readApiError(response: Response): Promise<string> {
+    try {
+        const result = (await response.json()) as ApiResponse<null>;
+        return result.msg || `请求失败: ${response.status}`;
+    } catch {
+        return `请求失败: ${response.status}`;
+    }
+}
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
+async function postJson<T>(path: string, body: unknown, retried = false): Promise<T> {
+    const token = await getAiToken();
+    const response = await fetch(`${resolveAiApiBase()}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...aiAuthHeaders(token)
+        },
+        credentials: 'include',
         body: JSON.stringify(body)
     });
+
+    if (response.status === 401 && !retried) {
+        invalidateAiToken();
+        return postJson<T>(path, body, true);
+    }
+
     const result = (await response.json()) as ApiResponse<T>;
 
     if (result.code !== 0) {
@@ -43,15 +59,21 @@ export async function chatWithAi(
 ): Promise<void> {
     const { contextSummary = '', mode = 'general', onDelta, signal } = options;
 
-    const response = await fetch(`${CHAT_API_BASE}/ai/chat`, {
+    const token = await getAiToken();
+
+    const response = await fetch(`${resolveAiApiBase(true)}/ai/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...aiAuthHeaders(token)
+        },
+        credentials: 'include',
         body: JSON.stringify({ messages, contextSummary, mode }),
         signal
     });
 
     if (!response.ok) {
-        throw new Error(`请求失败: ${response.status}`);
+        throw new Error(await readApiError(response));
     }
 
     const reader = response.body?.getReader();

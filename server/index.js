@@ -8,8 +8,15 @@ import { success, fail } from './utils/response.js';
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.set('trust proxy', 1);
+
+const corsOptions =
+    config.ai.allowedOrigins.length > 0
+        ? { origin: config.ai.allowedOrigins, credentials: true }
+        : undefined;
+
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '256kb' }));
 
 app.get('/api/health', (_req, res) => {
     success(res, { ok: true });
